@@ -8,9 +8,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import logistic
 from sklearn.svm import LinearSVC
 
+# 下面这行代码报警告：DeprecationWarning: Function make_blobs is deprecated; Please import make_blobs directly from scikit-learnwarnings.warn(msg, category=DeprecationWarning)
 X, y = mglearn.datasets.make_forge()
+# 本来想替换成下面这两行，结果报错 ValueError: cannot reshape array of size 3000000 into shape (1000,1000)
+# from sklearn.datasets import make_blobs
+# X, y = make_blobs()
 fig, axes = plt.subplots(1, 2, figsize=(10, 3))
-for model, ax in zip([LinearSVC(), LogisticRegression(solver='liblinear')], axes):
+for model, ax in zip([LinearSVC(max_iter=10000), LogisticRegression(solver='liblinear')], axes):
     clf = model.fit(X, y)
     mglearn.plots.plot_2d_separator(clf, X, fill=False, eps=0.5,
                                     ax=ax, alpha=.7)
@@ -35,21 +39,22 @@ from sklearn.datasets import load_breast_cancer
 cancer = load_breast_cancer()
 X_train, X_test, y_train, y_test = train_test_split(
     cancer.data, cancer.target, stratify=cancer.target, random_state=42)
-logreg = LogisticRegression(solver='liblinear', max_iter=10000).fit(X_train, y_train)
-print("Training set score: {:.3f}".format(logreg.score(X_train, y_train)))
-print("Test set score: {:.3f}".format(logreg.score(X_test, y_test)))
+logreg = LogisticRegression(solver='liblinear').fit(X_train, y_train)
+print("logreg Training set score: {:.3f}".format(logreg.score(X_train, y_train)))
+print("logreg Test set score: {:.3f}".format(logreg.score(X_test, y_test)))
 # C=1 的默认值给出了相当好的性能，在训练集和测试集上都达到 95% 的精度。但由于训练
 # 集和测试集的性能非常接近，所以模型很可能是欠拟合的。我们尝试增大 C 来拟合一个更灵活的模型
-logreg100 = LogisticRegression(C=100, solver='liblinear', max_iter=10000).fit(X_train, y_train)
-print("Training set score: {:.3f}".format(logreg100.score(X_train, y_train)))
-print("Test set score: {:.3f}".format(logreg100.score(X_test, y_test)))
+logreg100 = LogisticRegression(C=100, solver='liblinear').fit(X_train, y_train)
+print("logreg100 Training set score: {:.3f}".format(logreg100.score(X_train, y_train)))
+print("logreg100 Test set score: {:.3f}".format(logreg100.score(X_test, y_test)))
 # 使用 C=100 可以得到更高的训练集精度，也得到了稍高的测试集精度，这也证实了我们的
 # 直觉，即更复杂的模型应该性能更好。
 # 我们还可以研究使用正则化更强的模型时会发生什么。设置 C=0.01
-logreg001 = LogisticRegression(C=0.01, solver='liblinear', max_iter=10000).fit(X_train, y_train)
-print("Training set score: {:.3f}".format(logreg001.score(X_train, y_train)))
-print("Test set score: {:.3f}".format(logreg001.score(X_test, y_test)))  # 训练集和测试集的精度都比采用默认参数时更小
+logreg001 = LogisticRegression(C=0.01, solver='liblinear').fit(X_train, y_train)
+print("logreg001 Training set score: {:.3f}".format(logreg001.score(X_train, y_train)))
+print("logreg001 Test set score: {:.3f}".format(logreg001.score(X_test, y_test)))  # 训练集和测试集的精度都比采用默认参数时更小
 # 来看一下正则化参数 C 取三个不同的值时模型学到的系数
+
 plt.plot(logreg.coef_.T, 'o', label="C=1")
 plt.plot(logreg100.coef_.T, '^', label="C=100")
 plt.plot(logreg001.coef_.T, 'v', label="C=0.001")
@@ -64,12 +69,12 @@ plt.show()  # 不同 C 值的 Logistic 回归在乳腺癌数据集上学到的�
 # 如果想要一个可解释性更强的模型，使用 L1 正则化可能更好，因为它约束模型只使用少
 # 数几个特征。下面是使用 L1 正则化的系数图像和分类精度
 for C, marker in zip([0.001, 1, 100], ['o', '^', 'v']):
-    lr_l1 = LogisticRegression(C=C, penalty="l1", solver='liblinear', max_iter=10000).fit(X_train, y_train)
+    lr_l1 = LogisticRegression(C=C, penalty="l1", solver='liblinear', max_iter=1000).fit(X_train, y_train)
     print("Training accuracy of l1 logreg with C={:.3f}: {:.2f}".format(
         C, lr_l1.score(X_train, y_train)))
     print("Test accuracy of l1 logreg with C={:.3f}: {:.2f}".format(
         C, lr_l1.score(X_test, y_test)))
-plt.plot(lr_l1.coef_.T, marker, label="C={:.3f}".format(C))
+    plt.plot(lr_l1.coef_.T, marker, label="C={:.3f}".format(C))
 plt.xticks(range(cancer.data.shape[1]), cancer.feature_names, rotation=90)
 plt.hlines(0, 0, cancer.data.shape[1])
 plt.xlabel("Coefficient index")
